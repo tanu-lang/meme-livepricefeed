@@ -31,12 +31,12 @@ body{
   text-size-adjust:100%;
 }
 body::before{
-  content:'';position:fixed;inset:0;
+  content:'';position:fixed;top:0;left:0;right:0;bottom:0;
   background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(94,200,200,0.06) 0%,transparent 70%);
   pointer-events:none;
 }
 .price{
-  font-size:clamp(60px,22vw,160px);
+  font-size:100px;font-size:clamp(60px,22vw,160px);
   font-weight:700;
   color:var(--text);
   letter-spacing:-2px;
@@ -78,58 +78,132 @@ body::before{
 <div class="error" id="err"></div>
 
 <script>
-const MARKET = 'SIRENINR';
-const REFRESH = 60000;
-const URL = 'https://api.coindcx.com/exchange/ticker';
-const PROXIES = [
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+var MARKET  = 'SIRENINR';
+var REFRESH = 60000;
+var API_URL = 'https://api.coindcx.com/exchange/ticker';
+var PROXIES = [
+  function(u){ return 'https://corsproxy.io/?' + encodeURIComponent(u); },
+  function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); }
 ];
 
-async function fetchWithProxy(url) {
-  try {
-    const r = await fetch(url, {signal: AbortSignal.timeout(5000)});
-    if (r.ok) return r.json();
-  } catch(_){}
-  for (const mk of PROXIES) {
-    try {
-      const r = await fetch(mk(url), {signal: AbortSignal.timeout(8000)});
-      if (r.ok) return r.json();
-    } catch(_){}
-  }
-  throw new Error('Fetch failed');
+var HAS_FETCH   = typeof window.fetch === 'function';
+var HAS_PROMISE = typeof window.Promise === 'function';
+
+/* ── Time formatting without locale options ── */
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtTime(d) {
+  var h  = ('0' + d.getHours()).slice(-2);
+  var m  = ('0' + d.getMinutes()).slice(-2);
+  var s  = ('0' + d.getSeconds()).slice(-2);
+  return h + ':' + m + ':' + s;
 }
 
+/* ── Price formatting without en-IN locale ── */
 function fmt(p) {
   if (!p && p !== 0) return '—';
-  if (p >= 1000) return '₹' + p.toLocaleString('en-IN', {maximumFractionDigits:2});
   if (p >= 1)    return '₹' + p.toFixed(2);
   if (p >= 0.01) return '₹' + p.toFixed(4);
   return '₹' + p.toFixed(6);
 }
 
-async function fetch_price() {
-  const priceEl = document.getElementById('price');
-  const metaEl  = document.getElementById('meta');
-  const errEl   = document.getElementById('err');
-  try {
-    const data  = await fetchWithProxy(URL);
-    const match = data.find(d => d.market === MARKET);
-    if (!match) throw new Error('Market not found');
-    priceEl.textContent = fmt(parseFloat(match.last_price));
-    const now = new Date();
-    metaEl.innerHTML = '<span class="dot"></span>' +
-      now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    errEl.classList.remove('show');
-  } catch(e) {
-    errEl.textContent = '⚠ ' + e.message;
-    errEl.classList.add('show');
-    metaEl.innerHTML = '<span class="dot"></span>offline';
+/* ── XHR fetcher (works on Android 4+) ── */
+function xhrGet(url, ms, onDone, onFail) {
+  var xhr = new XMLHttpRequest();
+  var done = false;
+  var timer = setTimeout(function() {
+    done = true; xhr.abort(); onFail(new Error('timeout'));
+  }, ms);
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    clearTimeout(timer);
+    if (done) return;
+    done = true;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try { onDone(JSON.parse(xhr.responseText)); }
+      catch(e) { onFail(new Error('JSON error')); }
+    } else { onFail(new Error('HTTP ' + xhr.status)); }
+  };
+  xhr.onerror = function() { clearTimeout(timer); if (!done) { done=true; onFail(new Error('Network error')); } };
+  xhr.send();
+}
+
+/* ── Promise wrapper around XHR ── */
+function getJSON(url, ms) {
+  return new Promise(function(resolve, reject) {
+    if (HAS_FETCH) {
+      var done = false;
+      var timer = setTimeout(function() {
+        if (!done) { done=true; reject(new Error('timeout')); }
+      }, ms);
+      fetch(url).then(function(r) {
+        clearTimeout(timer);
+        if (done) return; done = true;
+        if (!r.ok) { reject(new Error('HTTP ' + r.status)); return; }
+        r.json().then(resolve).catch(reject);
+      }).catch(function(e) { clearTimeout(timer); if (!done) { done=true; reject(e); } });
+    } else {
+      xhrGet(url, ms, resolve, reject);
+    }
+  });
+}
+
+/* ── Try direct then proxies ── */
+function fetchWithProxy(url) {
+  return getJSON(url, 5000).catch(function() {
+    return getJSON(PROXIES[0](url), 8000).catch(function() {
+      return getJSON(PROXIES[1](url), 8000);
+    });
+  });
+}
+
+/* ── Find polyfill ── */
+function findInArray(arr, fn) {
+  for (var i = 0; i < arr.length; i++) { if (fn(arr[i])) return arr[i]; }
+  return null;
+}
+
+/* ── Render ── */
+function render(data) {
+  var match = findInArray(data, function(d) { return d.market === MARKET; });
+  if (!match) throw new Error('Market not found');
+  var priceEl = document.getElementById('price');
+  var metaEl  = document.getElementById('meta');
+  var errEl   = document.getElementById('err');
+  priceEl.textContent = fmt(parseFloat(match.last_price));
+  metaEl.innerHTML = '<span class="dot"></span>' + fmtTime(new Date());
+  errEl.style.display = 'none';
+  errEl.className = 'error';
+}
+
+function showError(msg) {
+  var errEl  = document.getElementById('err');
+  var metaEl = document.getElementById('meta');
+  errEl.textContent = '⚠ ' + msg;
+  errEl.style.display = 'block';
+  errEl.className = 'error show';
+  metaEl.innerHTML = '<span class="dot"></span>offline';
+}
+
+/* ── Main fetch — Promise path ── */
+function fetchPrice() {
+  if (HAS_PROMISE) {
+    fetchWithProxy(API_URL).then(render).catch(function(e) { showError(e.message || 'Fetch failed'); });
+  } else {
+    /* No Promise at all — pure XHR callback chain */
+    function tryUrl(idx) {
+      var urls = [API_URL, PROXIES[0](API_URL), PROXIES[1](API_URL)];
+      if (idx >= urls.length) { showError('All attempts failed'); return; }
+      xhrGet(urls[idx], idx === 0 ? 5000 : 8000, function(data) {
+        try { render(data); } catch(e) { showError(e.message); }
+      }, function() { tryUrl(idx + 1); });
+    }
+    tryUrl(0);
   }
 }
 
-fetch_price();
-setInterval(fetch_price, REFRESH);
+fetchPrice();
+setInterval(fetchPrice, REFRESH);
 </script>
 </body>
 </html>
