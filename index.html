@@ -69,17 +69,55 @@ body::before{
   display:none;position:relative;z-index:1;
 }
 .error.show{display:block;}
+
+/* ── Circular countdown clock ── */
+.clock-wrap{
+  position:relative;
+  width:64px;height:64px;
+  margin-top:32px;
+  z-index:1;
+}
+.clock-wrap svg{
+  position:absolute;top:0;left:0;
+  -webkit-transform:rotate(-90deg);
+  transform:rotate(-90deg);
+}
+.clock-track{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:3;}
+.clock-fill{
+  fill:none;stroke:#5ec8c8;stroke-width:3;
+  stroke-linecap:round;
+  stroke-dasharray:175.93;
+  stroke-dashoffset:0;
+  -webkit-transition:stroke-dashoffset 0.2s linear, stroke 0.4s;
+  transition:stroke-dashoffset 0.2s linear, stroke 0.4s;
+}
+.clock-num{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:-webkit-box;display:-webkit-flex;display:flex;
+  -webkit-align-items:center;align-items:center;
+  -webkit-justify-content:center;justify-content:center;
+  font-family:'Space Mono',monospace;
+  font-size:16px;font-weight:700;
+  color:#5ec8c8;
+}
 </style>
 </head>
 <body>
 
+<div class="clock-wrap">
+  <svg width="64" height="64" viewBox="0 0 64 64">
+    <circle class="clock-track" cx="32" cy="32" r="28"/>
+    <circle class="clock-fill" id="clock-fill" cx="32" cy="32" r="28"/>
+  </svg>
+  <div class="clock-num" id="clock-num">10</div>
+</div>
 <div class="price" id="price">—</div>
 <div class="meta" id="meta"><span class="dot"></span>loading…</div>
 <div class="error" id="err"></div>
 
 <script>
 var MARKET  = 'SIRENINR';
-var REFRESH = 60000;
+var REFRESH = 10000;
 var API_URL = 'https://api.coindcx.com/exchange/ticker';
 var PROXIES = [
   function(u){ return 'https://corsproxy.io/?' + encodeURIComponent(u); },
@@ -201,6 +239,57 @@ function fetchPrice() {
     tryUrl(0);
   }
 }
+
+/* ── Circular countdown clock ── */
+var CIRC = 2 * Math.PI * 28; /* 175.93 */
+var clockTimer = null;
+var clockSec = 0;
+
+function updateClock(sec) {
+  var fill = document.getElementById('clock-fill');
+  var num  = document.getElementById('clock-num');
+  if (!fill || !num) return;
+  var ratio = sec / (REFRESH / 1000);
+  fill.style.strokeDashoffset = CIRC * (1 - ratio);
+  fill.style.stroke = ratio > 0.5 ? '#5ec8c8' : ratio > 0.25 ? '#d4a843' : '#e0697a';
+  num.style.color   = ratio > 0.5 ? '#5ec8c8' : ratio > 0.25 ? '#d4a843' : '#e0697a';
+  num.textContent   = sec;
+}
+
+function startClock() {
+  if (clockTimer) clearInterval(clockTimer);
+  clockSec = Math.round(REFRESH / 1000);
+  updateClock(clockSec);
+  clockTimer = setInterval(function() {
+    clockSec--;
+    if (clockSec < 0) clockSec = 0;
+    updateClock(clockSec);
+  }, 1000);
+}
+
+/* ── Seconds-since-update ticker ── */
+var lastUpdate = null;
+var tickTimer  = null;
+
+function startTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  lastUpdate = Date.now();
+  tickTimer = setInterval(function() {
+    var sec = Math.round((Date.now() - lastUpdate) / 1000);
+    var metaEl = document.getElementById('meta');
+    var timeStr = metaEl ? (metaEl.getAttribute('data-time') || '') : '';
+    if (metaEl) metaEl.innerHTML = '<span class="dot"></span>' + timeStr + ' &nbsp;·&nbsp; ' + sec + 's ago';
+  }, 1000);
+}
+
+var _origRender = render;
+render = function(data) {
+  _origRender(data);
+  var metaEl = document.getElementById('meta');
+  if (metaEl) metaEl.setAttribute('data-time', fmtTime(new Date()));
+  startTick();
+  startClock();
+};
 
 fetchPrice();
 setInterval(fetchPrice, REFRESH);
