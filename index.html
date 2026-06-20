@@ -2,134 +2,467 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b1014">
-<title>Price</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIREN Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b1014;
-  --accent:#5ec8c8;
-  --muted:#7d93a0;
-  --red:#e0697a;
-  --text:#dde6e9;
+  --bg:#0b1014;--bg2:#11181d;--bg3:#161f25;
+  --border:rgba(120,160,170,0.10);
+  --text:#dde6e9;--muted:#7d93a0;
+  --accent:#5ec8c8;--accent-soft:rgba(94,200,200,0.10);
+  --red:#e0697a;--green:#5ec8a0;
+  --red-bg:rgba(224,105,122,0.08);--green-bg:rgba(94,200,160,0.08);
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html{height:100%;background:var(--bg);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
 body{
+  background:var(--bg);color:var(--text);
+  font-family:'Syne',sans-serif;
+  min-height:100vh;
   display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  height:100%;
-  min-height:100svh;
-  font-family:'Space Mono',monospace;
-  background:var(--bg);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
+  padding:32px 40px;
 }
-body::before{
-  content:'';position:fixed;inset:0;
-  background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(94,200,200,0.06) 0%,transparent 70%);
-  pointer-events:none;
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% -5%,rgba(94,200,200,0.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;}
+
+/* ── LAYOUT ── */
+.page{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;width:100%;max-width:1100px;margin:0 auto;}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;}
+.logo{display:flex;align-items:center;gap:16px;}
+.coin-icon{width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid var(--border);flex-shrink:0;}
+.coin-icon img{width:100%;height:100%;object-fit:cover;}
+.coin-name{font-size:26px;font-weight:800;letter-spacing:-0.3px;}
+.coin-name span.accent{color:var(--accent);}
+.coin-sub{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:4px;}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border:1px solid rgba(94,200,200,0.25);border-radius:100px;padding:6px 16px;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;}
+.live-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(94,200,200,0.4);}50%{opacity:0.4;box-shadow:0 0 0 4px rgba(94,200,200,0);}}
+
+/* ── BIG PRICE ROW ── */
+.prices-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.price-card{background:var(--bg2);border-radius:18px;padding:32px;border:1px solid var(--border);}
+.pc-label{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px;color:var(--muted);}
+.pc-price{font-family:'Space Mono',monospace;font-weight:700;line-height:1;margin-bottom:10px;font-size:42px;font-size:clamp(32px,5vw,56px);color:var(--text);}
+.pc-sub{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);}
+.pc-source{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-top:8px;color:var(--muted);}
+
+/* ── PNL ROW ── */
+.pnl-row{background:var(--bg2);border-radius:18px;padding:28px 32px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.pnl-label-sm{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.pnl-amount{font-family:'Space Mono',monospace;font-size:36px;font-size:clamp(28px,4vw,44px);font-weight:700;line-height:1;}
+.pnl-amount.pos{color:var(--green);}
+.pnl-amount.neg{color:var(--red);}
+.pnl-badge{padding:12px 24px;border-radius:12px;font-family:'Space Mono',monospace;font-size:20px;font-weight:700;}
+.pnl-badge.pos{background:var(--green-bg);color:var(--green);border:1px solid rgba(94,200,160,0.2);}
+.pnl-badge.neg{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,105,122,0.2);}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;}
+.stat{background:var(--bg2);padding:24px 22px;}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.stat-value{font-family:'Space Mono',monospace;font-size:19px;font-weight:700;color:var(--text);line-height:1;}
+.stat-value.pos{color:var(--green);}
+.stat-value.neg{color:var(--red);}
+.stat-value.accent{color:var(--accent);}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;}
+
+/* ── AVG BUY ROW ── */
+.avg-row{background:var(--bg2);border-radius:18px;padding:24px 32px;border:1px solid var(--border);display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:20px;}
+.avg-item{flex:1;min-width:140px;}
+.avg-item-label{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.avg-item-val{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;}
+.avg-item-val.pos{color:var(--green);}
+.avg-item-val.neg{color:var(--red);}
+.avg-divider{width:1px;height:44px;background:var(--border);flex-shrink:0;}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px;padding-left:4px;}
+
+/* ── FOOTER ── */
+.footer-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 4px;margin-top:auto;}
+.updated-text{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);}
+.ring-wrap{display:flex;align-items:center;gap:10px;}
+.ring-svg-wrap{position:relative;width:38px;height:38px;flex-shrink:0;}
+.ring-svg-wrap svg{transform:rotate(-90deg);}
+.ring-num-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);}
+.ring-track{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:3;}
+.ring-fill{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-dasharray:97.39;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke 0.4s;}
+.ring-label{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;}
+
+.error-bar{display:none;padding:12px 24px;background:var(--red-bg);border:1px solid rgba(224,105,122,0.15);border-radius:12px;font-size:12px;color:var(--red);font-family:'Space Mono',monospace;text-align:center;margin-bottom:16px;}
+.error-bar.visible{display:block;}
+
+@media(max-width:700px){
+  body{padding:20px;}
+  .prices-row{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
 }
-.price{
-  font-size:clamp(60px,22vw,160px);
-  font-weight:700;
-  color:var(--text);
-  letter-spacing:-2px;
-  line-height:1;
-  position:relative;z-index:1;
-  text-align:center;
-  padding:0 12px;
-  width:100%;
-}
-.meta{
-  margin-top:24px;
-  font-size:15px;
-  color:var(--muted);
-  text-align:center;
-  position:relative;z-index:1;
-  letter-spacing:0.06em;
-}
-.dot{
-  display:inline-block;width:6px;height:6px;
-  background:var(--accent);border-radius:50%;
-  margin-right:7px;vertical-align:middle;
-  animation:pulse 2s infinite;
-}
-@keyframes pulse{
-  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(94,200,200,0.4);}
-  50%{opacity:0.4;box-shadow:0 0 0 5px rgba(94,200,200,0);}
-}
-.error{
-  color:var(--red);font-size:12px;margin-top:14px;
-  display:none;position:relative;z-index:1;
-}
-.error.show{display:block;}
 </style>
 </head>
 <body>
+<div class="page">
 
-<div class="price" id="price">—</div>
-<div class="meta" id="meta"><span class="dot"></span>loading…</div>
-<div class="error" id="err"></div>
+  <header>
+    <div class="logo">
+      <div class="coin-icon">
+        <img src="data:image/jpeg;base64,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" alt="SIREN">
+      </div>
+      <div>
+        <div class="coin-name"><span class="accent">Siren</span> <span style="color:var(--muted);font-size:15px;font-weight:600;">SIREN</span></div>
+        <div class="coin-sub" id="qty-held-text">CoinDCX · 36,000 coins held</div>
+      </div>
+    </div>
+    <div class="live-badge"><span class="live-dot"></span><span id="badge-text">Live</span></div>
+  </header>
+
+  <div class="error-bar" id="error-bar"></div>
+
+  <!-- Big Price Row -->
+  <div class="prices-row" style="grid-template-columns:1fr;">
+    <div class="price-card inr-card">
+      <div class="pc-label">Price · INR</div>
+      <div class="pc-price" id="live-price">—</div>
+      <div class="pc-sub" id="price-change">&nbsp;</div>
+      <div class="pc-source">CoinDCX · SIRENINR</div>
+    </div>
+  </div>
+
+  <!-- P&L Row -->
+  <div class="pnl-row">
+    <div class="pnl-left">
+      <div class="pnl-label-sm">Total P&amp;L</div>
+      <div class="pnl-amount" id="pnl-main">—</div>
+    </div>
+    <div class="pnl-badge" id="pnl-badge">—</div>
+  </div>
+
+  <!-- Stats 4-col -->
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Curr. Value</div>
+      <div class="stat-value accent" id="curr-value">—</div>
+      <div class="stat-sub">at live price</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Invested</div>
+      <div class="stat-value" id="invested-value">₹6,11,901.98</div>
+      <div class="stat-sub">cost basis</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Quantity</div>
+      <div class="stat-value" id="quantity-value">36,000</div>
+      <div class="stat-sub">SIREN held</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">24h Range</div>
+      <div class="stat-value" id="range-val" style="font-size:13px;">—</div>
+      <div class="stat-sub" id="range-sub">loading…</div>
+    </div>
+  </div>
+
+  <!-- Avg Buy Row -->
+  <div class="avg-row">
+    <div class="avg-item">
+      <div class="avg-item-label">Avg Buy Price</div>
+      <div class="avg-item-val" id="avg-buy-inr">₹16.997</div>
+    </div>
+    <div class="avg-divider"></div>
+    <div class="avg-item">
+      <div class="avg-item-label">Live vs Avg</div>
+      <div class="avg-item-val" id="avg-diff">—</div>
+    </div>
+    <div class="avg-divider"></div>
+    <div class="avg-item">
+      <div class="avg-item-label">Break-even at</div>
+      <div class="avg-item-val" id="breakeven-inr" style="color:var(--accent);">₹16.997</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-bar">
+    <div class="updated-text" id="updated-time">Fetching…</div>
+    <div class="ring-wrap">
+      <div class="ring-svg-wrap">
+        <svg width="38" height="38" viewBox="0 0 38 38">
+          <circle class="ring-track" cx="19" cy="19" r="15.5"/>
+          <circle class="ring-fill" id="ring-fill" cx="19" cy="19" r="15.5"/>
+        </svg>
+        <div class="ring-num-center" id="countdown-num">60</div>
+      </div>
+      <div class="ring-label">next refresh</div>
+    </div>
+  </div>
+
+</div>
 
 <script>
-const MARKET = 'SIRENINR';
-const REFRESH = 60000;
-const URL = 'https://api.coindcx.com/exchange/ticker';
-const PROXIES = [
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-];
+var QTY      = 36000;
+var INVESTED = 611901.98;
+var AVG_BUY  = INVESTED / QTY;
+var MARKET   = 'SIRENINR';
+var REFRESH  = 60;
 
-async function fetchWithProxy(url) {
-  try {
-    const r = await fetch(url, {signal: AbortSignal.timeout(5000)});
-    if (r.ok) return r.json();
-  } catch(_){}
-  for (const mk of PROXIES) {
-    try {
-      const r = await fetch(mk(url), {signal: AbortSignal.timeout(8000)});
-      if (r.ok) return r.json();
-    } catch(_){}
+var countdown = REFRESH;
+var countdownTimer = null;
+var RING_CIRC = 2 * Math.PI * 15;
+
+/* ── Number formatting (no en-IN locale reliance) ── */
+function fmtNum(n, decimals) {
+  var s = Math.round(n).toString();
+  var result = '';
+  var start = s.length % 3 || 3;
+  result += s.slice(0, start);
+  for (var i = start; i < s.length; i += 3) {
+    result += ',' + s.slice(i, i + 3);
   }
-  throw new Error('Fetch failed');
+  if (decimals) result += '.' + n.toFixed(decimals).split('.')[1];
+  return result;
 }
 
-function fmt(p) {
+function inr(v) {
+  var abs = Math.abs(v);
+  if (abs >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+  if (abs >= 1e5) return '₹' + (v / 1e5).toFixed(2) + 'L';
+  if (abs >= 1000) return '₹' + fmtNum(v, 0);
+  return '₹' + v.toFixed(2);
+}
+function fmtInr(p) {
   if (!p && p !== 0) return '—';
-  if (p >= 1000) return '₹' + p.toLocaleString('en-IN', {maximumFractionDigits:2});
-  if (p >= 1)    return '₹' + p.toFixed(2);
+  if (p >= 1e5) return '₹' + fmtNum(p, 0);
+  if (p >= 1000) return '₹' + fmtNum(p, 2);
+  if (p >= 1)   return '₹' + p.toFixed(2);
   if (p >= 0.01) return '₹' + p.toFixed(4);
   return '₹' + p.toFixed(6);
 }
+function pct(v) { return (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%'; }
 
-async function fetch_price() {
-  const priceEl = document.getElementById('price');
-  const metaEl  = document.getElementById('meta');
-  const errEl   = document.getElementById('err');
-  try {
-    const data  = await fetchWithProxy(URL);
-    const match = data.find(d => d.market === MARKET);
-    if (!match) throw new Error('Market not found');
-    priceEl.textContent = fmt(parseFloat(match.last_price));
-    const now = new Date();
-    metaEl.innerHTML = '<span class="dot"></span>' +
-      now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    errEl.classList.remove('show');
-  } catch(e) {
-    errEl.textContent = '⚠ ' + e.message;
-    errEl.classList.add('show');
-    metaEl.innerHTML = '<span class="dot"></span>offline';
-  }
+/* ── Date formatting (no locale options) ── */
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d) {
+  var day  = ('0' + d.getDate()).slice(-2);
+  var mon  = MONTHS[d.getMonth()];
+  var h    = ('0' + d.getHours()).slice(-2);
+  var m    = ('0' + d.getMinutes()).slice(-2);
+  return 'Updated: ' + day + ' ' + mon + ', ' + h + ':' + m;
 }
 
-fetch_price();
-setInterval(fetch_price, REFRESH);
+/* ── Ring countdown ── */
+function updateRing(val) {
+  document.getElementById('countdown-num').textContent = val;
+  var el = document.getElementById('ring-fill');
+  var ratio = val / REFRESH;
+  el.style.strokeDashoffset = RING_CIRC * (1 - ratio);
+  el.style.stroke = ratio > 0.5 ? '#5ec8c8' : ratio > 0.25 ? '#d4a843' : '#e0697a';
+}
+function startCountdown() {
+  countdown = REFRESH; updateRing(countdown);
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(function() {
+    countdown--;
+    updateRing(countdown);
+    if (countdown <= 0) countdown = REFRESH;
+  }, 1000);
+}
+
+/* ── Render ── */
+function renderInr(price, high, low) {
+  var val  = QTY * price;
+  var p    = val - INVESTED;
+  var ret  = p / INVESTED;
+  var sign = p >= 0;
+  var cls  = sign ? 'pos' : 'neg';
+
+  document.getElementById('live-price').textContent  = fmtInr(price);
+  document.getElementById('curr-value').textContent  = inr(val);
+  document.getElementById('pnl-main').textContent    = (sign ? '+' : '−') + inr(Math.abs(p));
+  document.getElementById('pnl-main').className      = 'pnl-amount ' + cls;
+  document.getElementById('pnl-badge').textContent   = pct(ret);
+  document.getElementById('pnl-badge').className     = 'pnl-badge ' + cls;
+
+  var diff    = price - AVG_BUY;
+  var diffPct = (diff / AVG_BUY * 100).toFixed(2);
+  document.getElementById('avg-diff').textContent    = (diff >= 0 ? '+' : '') + diffPct + '%';
+  document.getElementById('avg-diff').className      = 'avg-item-val ' + (diff >= 0 ? 'pos' : 'neg');
+  document.getElementById('price-change').textContent = 'Avg buy ₹' + AVG_BUY.toFixed(3) + ' · ' + (diff >= 0 ? '+' : '') + diffPct + '% vs avg';
+
+  if (high && low) {
+    document.getElementById('range-val').textContent = fmtInr(parseFloat(low)) + ' – ' + fmtInr(parseFloat(high));
+    document.getElementById('range-sub').textContent = '24h range (INR)';
+  }
+
+  document.getElementById('updated-time').textContent = fmtDate(new Date());
+  var eb = document.getElementById('error-bar');
+  eb.style.display = 'none';
+  eb.className = 'error-bar';
+}
+
+function showError(msg) {
+  var eb = document.getElementById('error-bar');
+  eb.textContent = '⚠ ' + msg;
+  eb.style.display = 'block';
+  eb.className = 'error-bar visible';
+}
+
+var COINDCX_URL = 'https://api.coindcx.com/exchange/ticker';
+var PROXIES = [
+  function(u) { return 'https://corsproxy.io/?' + encodeURIComponent(u); },
+  function(u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+  function(u) { return 'https://thingproxy.freeboard.io/fetch/' + u; }
+];
+
+/* ── Browser capability detection ── */
+var HAS_FETCH   = typeof window.fetch === 'function';
+var HAS_PROMISE = typeof window.Promise === 'function';
+var OLD_BROWSER = !HAS_FETCH || !HAS_PROMISE;
+
+if (OLD_BROWSER) {
+  /* Show a one-time banner so the user knows they're on a limited browser */
+  var ob = document.getElementById('error-bar');
+  ob.textContent = 'ℹ Old browser detected — using compatibility mode';
+  ob.style.display = 'block';
+  ob.style.background = 'rgba(94,200,200,0.08)';
+  ob.style.color = '#5ec8c8';
+  ob.style.borderColor = 'rgba(94,200,200,0.2)';
+  setTimeout(function() { ob.style.display = 'none'; }, 4000);
+}
+
+/* ── XHR-based JSON fetcher (works on Android 4+, IE9+) ── */
+function xhrGet(url, timeoutMs, onDone, onFail) {
+  var xhr = new XMLHttpRequest();
+  var timedOut = false;
+  var timer = setTimeout(function() {
+    timedOut = true;
+    xhr.abort();
+    onFail(new Error('timeout'));
+  }, timeoutMs);
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    clearTimeout(timer);
+    if (timedOut) return;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try { onDone(JSON.parse(xhr.responseText)); }
+      catch(e) { onFail(new Error('JSON parse error')); }
+    } else {
+      onFail(new Error('HTTP ' + xhr.status));
+    }
+  };
+  xhr.onerror = function() { clearTimeout(timer); if (!timedOut) onFail(new Error('Network error')); };
+  xhr.send();
+}
+
+/* ── Promise-based wrapper around XHR ── */
+function getJSON(url, ms) {
+  return new Promise(function(resolve, reject) {
+    if (HAS_FETCH) {
+      /* Modern path — fetch with manual timeout */
+      var done = false;
+      var timer = setTimeout(function() {
+        if (!done) { done = true; reject(new Error('timeout')); }
+      }, ms);
+      fetch(url).then(function(r) {
+        clearTimeout(timer);
+        if (done) return;
+        done = true;
+        if (!r.ok) { reject(new Error('HTTP ' + r.status)); return; }
+        r.json().then(resolve).catch(reject);
+      }).catch(function(e) {
+        clearTimeout(timer);
+        if (!done) { done = true; reject(e); }
+      });
+    } else {
+      /* Legacy path — XHR */
+      xhrGet(url, ms, resolve, reject);
+    }
+  });
+}
+
+/* ── Try direct, then each proxy in sequence ── */
+function fetchWithProxy(url) {
+  return getJSON(url, 5000).catch(function() {
+    return getJSON(PROXIES[0](url), 8000).catch(function() {
+      return getJSON(PROXIES[1](url), 8000).catch(function() {
+        return getJSON(PROXIES[2](url), 8000);
+      });
+    });
+  });
+}
+
+/* ── Find polyfill for old Android WebView ── */
+function findInArray(arr, fn) {
+  for (var i = 0; i < arr.length; i++) {
+    if (fn(arr[i])) return arr[i];
+  }
+  return null;
+}
+
+function fetchInr() {
+  var badge = document.getElementById('badge-text');
+  return fetchWithProxy(COINDCX_URL).then(function(data) {
+    var match = findInArray(data, function(d) { return d.market === MARKET; });
+    if (!match) throw new Error('SIRENINR not found');
+    renderInr(parseFloat(match.last_price), match.high, match.low);
+    if (badge) badge.textContent = 'Live';
+  }).catch(function(err) {
+    showError(err.message || 'Fetch failed');
+    if (badge) badge.textContent = 'Offline';
+    document.getElementById('updated-time').textContent = 'Price fetch failed';
+  });
+}
+
+function initStatic() {
+  document.getElementById('qty-held-text').textContent   = 'CoinDCX · ' + fmtNum(QTY, 0) + ' coins held';
+  document.getElementById('invested-value').textContent  = '₹' + fmtNum(INVESTED, 2);
+  document.getElementById('quantity-value').textContent  = fmtNum(QTY, 0);
+  document.getElementById('avg-buy-inr').textContent     = '₹' + AVG_BUY.toFixed(3);
+  document.getElementById('breakeven-inr').textContent   = '₹' + AVG_BUY.toFixed(3);
+}
+
+function fetchAll() {
+  fetchInr().then(function() { startCountdown(); });
+}
+
+initStatic();
+
+/* ── If Promise doesn't exist, use a pure XHR callback chain ── */
+if (!HAS_PROMISE) {
+  function xhrChain(urls, idx, onDone, onFail) {
+    if (idx >= urls.length) { onFail(new Error('All attempts failed')); return; }
+    xhrGet(urls[idx], idx === 0 ? 5000 : 8000, onDone, function() {
+      xhrChain(urls, idx + 1, onDone, onFail);
+    });
+  }
+  function doFetchLegacy() {
+    var badge = document.getElementById('badge-text');
+    var urls = [
+      COINDCX_URL,
+      PROXIES[0](COINDCX_URL),
+      PROXIES[1](COINDCX_URL),
+      PROXIES[2](COINDCX_URL)
+    ];
+    xhrChain(urls, 0, function(data) {
+      var match = findInArray(data, function(d) { return d.market === MARKET; });
+      if (!match) { showError('SIRENINR not found'); if(badge) badge.textContent='Offline'; return; }
+      renderInr(parseFloat(match.last_price), match.high, match.low);
+      if (badge) badge.textContent = 'Live';
+      startCountdown();
+    }, function(err) {
+      showError(err.message || 'Fetch failed');
+      if (badge) badge.textContent = 'Offline';
+      document.getElementById('updated-time').textContent = 'Price fetch failed';
+    });
+  }
+  doFetchLegacy();
+  setInterval(doFetchLegacy, 60000);
+} else {
+  fetchAll();
+  setInterval(fetchAll, 60000);
+}
 </script>
 </body>
 </html>
