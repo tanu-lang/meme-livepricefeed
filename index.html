@@ -36,7 +36,7 @@ body::before{
   pointer-events:none;
 }
 .price{
-  font-size:100px;font-size:clamp(60px,22vw,160px);
+  font-size:200px;font-size:clamp(120px,44vw,320px);
   font-weight:700;
   color:var(--text);
   letter-spacing:-2px;
@@ -47,7 +47,7 @@ body::before{
   width:100%;
 }
 .meta{
-  margin-top:24px;
+  margin-bottom:8px;
   font-size:15px;
   color:var(--muted);
   text-align:center;
@@ -74,7 +74,7 @@ body::before{
 .clock-wrap{
   position:relative;
   width:64px;height:64px;
-  margin-top:32px;
+  margin-top:16px;
   z-index:1;
 }
 .clock-wrap svg{
@@ -104,6 +104,7 @@ body::before{
 </head>
 <body>
 
+<div class="price" id="price">—</div>
 <div class="clock-wrap">
   <svg width="64" height="64" viewBox="0 0 64 64">
     <circle class="clock-track" cx="32" cy="32" r="28"/>
@@ -111,8 +112,6 @@ body::before{
   </svg>
   <div class="clock-num" id="clock-num">10</div>
 </div>
-<div class="price" id="price">—</div>
-<div class="meta" id="meta"><span class="dot"></span>loading…</div>
 <div class="error" id="err"></div>
 
 <script>
@@ -139,9 +138,9 @@ function fmtTime(d) {
 /* ── Price formatting without en-IN locale ── */
 function fmt(p) {
   if (!p && p !== 0) return '—';
-  if (p >= 1)    return '₹' + p.toFixed(2);
-  if (p >= 0.01) return '₹' + p.toFixed(4);
-  return '₹' + p.toFixed(6);
+  if (p >= 1)    return '' + parseFloat(p.toFixed(6));
+  if (p >= 0.01) return '' + p.toFixed(4);
+  return '' + p.toFixed(6);
 }
 
 /* ── XHR fetcher (works on Android 4+) ── */
@@ -206,21 +205,17 @@ function render(data) {
   var match = findInArray(data, function(d) { return d.market === MARKET; });
   if (!match) throw new Error('Market not found');
   var priceEl = document.getElementById('price');
-  var metaEl  = document.getElementById('meta');
   var errEl   = document.getElementById('err');
   priceEl.textContent = fmt(parseFloat(match.last_price));
-  metaEl.innerHTML = '<span class="dot"></span>' + fmtTime(new Date());
   errEl.style.display = 'none';
   errEl.className = 'error';
 }
 
 function showError(msg) {
-  var errEl  = document.getElementById('err');
-  var metaEl = document.getElementById('meta');
+  var errEl = document.getElementById('err');
   errEl.textContent = '⚠ ' + msg;
   errEl.style.display = 'block';
   errEl.className = 'error show';
-  metaEl.innerHTML = '<span class="dot"></span>offline';
 }
 
 /* ── Main fetch — Promise path ── */
@@ -267,27 +262,11 @@ function startClock() {
   }, 1000);
 }
 
-/* ── Seconds-since-update ticker ── */
-var lastUpdate = null;
-var tickTimer  = null;
-
-function startTick() {
-  if (tickTimer) clearInterval(tickTimer);
-  lastUpdate = Date.now();
-  tickTimer = setInterval(function() {
-    var sec = Math.round((Date.now() - lastUpdate) / 1000);
-    var metaEl = document.getElementById('meta');
-    var timeStr = metaEl ? (metaEl.getAttribute('data-time') || '') : '';
-    if (metaEl) metaEl.innerHTML = '<span class="dot"></span>' + timeStr + ' &nbsp;·&nbsp; ' + sec + 's ago';
-  }, 1000);
-}
+/* ── Seconds-since-update ticker — removed (no meta label) ── */
 
 var _origRender = render;
 render = function(data) {
   _origRender(data);
-  var metaEl = document.getElementById('meta');
-  if (metaEl) metaEl.setAttribute('data-time', fmtTime(new Date()));
-  startTick();
   startClock();
 };
 
