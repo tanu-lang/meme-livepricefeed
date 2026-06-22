@@ -26,7 +26,7 @@ body{
   min-height:100svh;
   font-family:'Space Mono',monospace;
   background:var(--bg);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) max(env(safe-area-inset-bottom), 20px) env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   -webkit-text-size-adjust:100%;
   text-size-adjust:100%;
 }
@@ -35,8 +35,15 @@ body::before{
   background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(94,200,200,0.06) 0%,transparent 70%);
   pointer-events:none;
 }
+.center-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;z-index:1;
+  width:100%;
+}
 .price{
-  font-size:100px;
+  font-size:100px;font-size:clamp(60px,22vw,160px);
   font-weight:700;
   color:var(--text);
   letter-spacing:-2px;
@@ -45,10 +52,9 @@ body::before{
   text-align:center;
   padding:0 12px;
   width:100%;
-  white-space:nowrap;
 }
 .meta{
-  margin-bottom:8px;
+  margin-top:16px;
   font-size:15px;
   color:var(--muted);
   text-align:center;
@@ -71,27 +77,52 @@ body::before{
 }
 .error.show{display:block;}
 
-/* ── Progress bar ── */
-.progress-bar{
-  position:fixed;bottom:0;left:0;right:0;
-  height:3px;
-  background:rgba(255,255,255,0.07);
-  z-index:10;
+/* ── Circular countdown clock ── */
+.clock-wrap{
+  position:relative;
+  width:64px;height:64px;
+  margin-top:20px;
+  z-index:1;
 }
-.progress-fill{
-  height:100%;
-  width:100%;
-  background:rgba(94,200,200,0.35);
-  transform-origin:left;
-  transition:transform 0.2s linear;
+.clock-wrap svg{
+  position:absolute;top:0;left:0;
+  -webkit-transform:rotate(-90deg);
+  transform:rotate(-90deg);
+}
+.clock-track{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:3;}
+.clock-fill{
+  fill:none;stroke:#5ec8c8;stroke-width:3;
+  stroke-linecap:round;
+  stroke-dasharray:175.93;
+  stroke-dashoffset:0;
+  -webkit-transition:stroke-dashoffset 0.2s linear, stroke 0.4s;
+  transition:stroke-dashoffset 0.2s linear, stroke 0.4s;
+}
+.clock-num{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:-webkit-box;display:-webkit-flex;display:flex;
+  -webkit-align-items:center;align-items:center;
+  -webkit-justify-content:center;justify-content:center;
+  font-family:'Space Mono',monospace;
+  font-size:16px;font-weight:700;
+  color:#5ec8c8;
 }
 </style>
 </head>
 <body>
 
-<div class="price" id="price">—</div>
-<div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-<div class="error" id="err"></div>
+<div class="center-col">
+  <div class="clock-wrap">
+    <svg width="64" height="64" viewBox="0 0 64 64">
+      <circle class="clock-track" cx="32" cy="32" r="28"/>
+      <circle class="clock-fill" id="clock-fill" cx="32" cy="32" r="28"/>
+    </svg>
+    <div class="clock-num" id="clock-num">10</div>
+  </div>
+  <div class="price" id="price">—</div>
+  <div class="meta" id="meta"><span class="dot"></span>loading…</div>
+  <div class="error" id="err"></div>
+</div>
 
 <script>
 var MARKET  = 'SIRENINR';
@@ -105,7 +136,7 @@ var PROXIES = [
 var HAS_FETCH   = typeof window.fetch === 'function';
 var HAS_PROMISE = typeof window.Promise === 'function';
 
-/* ── Time formatting without locale options ── */
+/* ── Time formatting ── */
 var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtTime(d) {
   var h  = ('0' + d.getHours()).slice(-2);
@@ -114,15 +145,15 @@ function fmtTime(d) {
   return h + ':' + m + ':' + s;
 }
 
-/* ── Price formatting without en-IN locale ── */
+/* ── Price formatting ── */
 function fmt(p) {
   if (!p && p !== 0) return '—';
-  if (p >= 1)    return '' + parseFloat(p.toFixed(6));
-  if (p >= 0.01) return '' + p.toFixed(4);
-  return '' + p.toFixed(6);
+  if (p >= 1)    return parseFloat(p.toFixed(6));
+  if (p >= 0.01) return p.toFixed(4);
+  return p.toFixed(6);
 }
 
-/* ── XHR fetcher (works on Android 4+) ── */
+/* ── XHR fetcher ── */
 function xhrGet(url, ms, onDone, onFail) {
   var xhr = new XMLHttpRequest();
   var done = false;
@@ -144,7 +175,7 @@ function xhrGet(url, ms, onDone, onFail) {
   xhr.send();
 }
 
-/* ── Promise wrapper around XHR ── */
+/* ── Promise wrapper ── */
 function getJSON(url, ms) {
   return new Promise(function(resolve, reject) {
     if (HAS_FETCH) {
@@ -164,7 +195,6 @@ function getJSON(url, ms) {
   });
 }
 
-/* ── Try direct then proxies ── */
 function fetchWithProxy(url) {
   return getJSON(url, 5000).catch(function() {
     return getJSON(PROXIES[0](url), 8000).catch(function() {
@@ -173,7 +203,6 @@ function fetchWithProxy(url) {
   });
 }
 
-/* ── Find polyfill ── */
 function findInArray(arr, fn) {
   for (var i = 0; i < arr.length; i++) { if (fn(arr[i])) return arr[i]; }
   return null;
@@ -184,25 +213,27 @@ function render(data) {
   var match = findInArray(data, function(d) { return d.market === MARKET; });
   if (!match) throw new Error('Market not found');
   var priceEl = document.getElementById('price');
+  var metaEl  = document.getElementById('meta');
   var errEl   = document.getElementById('err');
   priceEl.textContent = fmt(parseFloat(match.last_price));
+  metaEl.innerHTML = '<span class="dot"></span>' + fmtTime(new Date());
   errEl.style.display = 'none';
   errEl.className = 'error';
 }
 
 function showError(msg) {
-  var errEl = document.getElementById('err');
+  var errEl  = document.getElementById('err');
+  var metaEl = document.getElementById('meta');
   errEl.textContent = '⚠ ' + msg;
   errEl.style.display = 'block';
   errEl.className = 'error show';
+  metaEl.innerHTML = '<span class="dot"></span>offline';
 }
 
-/* ── Main fetch — Promise path ── */
 function fetchPrice() {
   if (HAS_PROMISE) {
     fetchWithProxy(API_URL).then(render).catch(function(e) { showError(e.message || 'Fetch failed'); });
   } else {
-    /* No Promise at all — pure XHR callback chain */
     function tryUrl(idx) {
       var urls = [API_URL, PROXIES[0](API_URL), PROXIES[1](API_URL)];
       if (idx >= urls.length) { showError('All attempts failed'); return; }
@@ -214,53 +245,56 @@ function fetchPrice() {
   }
 }
 
+/* ── Circular countdown clock ── */
+var CIRC = 2 * Math.PI * 28;
+var clockTimer = null;
+var clockSec = 0;
 
-/* ── Progress bar countdown ── */
-var progTimer = null;
-var progStart = null;
-
-function updateProgress() {
-  var fill = document.getElementById('progress-fill');
-  if (!fill) return;
-  var elapsed = Date.now() - progStart;
-  var ratio = Math.max(0, 1 - elapsed / REFRESH);
-  fill.style.transform = 'scaleX(' + ratio + ')';
+function updateClock(sec) {
+  var fill = document.getElementById('clock-fill');
+  var num  = document.getElementById('clock-num');
+  if (!fill || !num) return;
+  var ratio = sec / (REFRESH / 1000);
+  fill.style.strokeDashoffset = CIRC * (1 - ratio);
+  fill.style.stroke = ratio > 0.5 ? '#5ec8c8' : ratio > 0.25 ? '#d4a843' : '#e0697a';
+  num.style.color   = ratio > 0.5 ? '#5ec8c8' : ratio > 0.25 ? '#d4a843' : '#e0697a';
+  num.textContent   = sec;
 }
 
-function startProgress() {
-  if (progTimer) clearInterval(progTimer);
-  progStart = Date.now();
-  updateProgress();
-  progTimer = setInterval(updateProgress, 200);
+function startClock() {
+  if (clockTimer) clearInterval(clockTimer);
+  clockSec = Math.round(REFRESH / 1000);
+  updateClock(clockSec);
+  clockTimer = setInterval(function() {
+    clockSec--;
+    if (clockSec < 0) clockSec = 0;
+    updateClock(clockSec);
+  }, 1000);
 }
 
-/* ── Auto-fit price to fill container ── */
-function fitPrice() {
-  var el = document.getElementById('price');
-  if (!el || el.textContent === '—') return;
-  var vw = window.innerWidth || document.documentElement.clientWidth;
-  var vh = window.innerHeight || document.documentElement.clientHeight;
-  var maxW = vw - 24;
-  var maxH = vh * 0.75;
-  var lo = 40, hi = vw;
-  while (hi - lo > 1) {
-    var mid = Math.floor((lo + hi) / 2);
-    el.style.fontSize = mid + 'px';
-    if (el.scrollWidth <= maxW && el.offsetHeight <= maxH) { lo = mid; } else { hi = mid; }
-  }
-  el.style.fontSize = lo + 'px';
-}
+/* ── Seconds-since-update ticker ── */
+var lastUpdate = null;
+var tickTimer  = null;
 
-/* ── Seconds-since-update ticker — removed (no meta label) ── */
+function startTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  lastUpdate = Date.now();
+  tickTimer = setInterval(function() {
+    var sec = Math.round((Date.now() - lastUpdate) / 1000);
+    var metaEl = document.getElementById('meta');
+    var timeStr = metaEl ? (metaEl.getAttribute('data-time') || '') : '';
+    if (metaEl) metaEl.innerHTML = '<span class="dot"></span>' + timeStr + ' &nbsp;·&nbsp; ' + sec + 's ago';
+  }, 1000);
+}
 
 var _origRender = render;
 render = function(data) {
   _origRender(data);
-  fitPrice();
-  startProgress();
+  var metaEl = document.getElementById('meta');
+  if (metaEl) metaEl.setAttribute('data-time', fmtTime(new Date()));
+  startTick();
+  startClock();
 };
-
-window.addEventListener('resize', fitPrice);
 
 fetchPrice();
 setInterval(fetchPrice, REFRESH);
