@@ -36,7 +36,7 @@ body::before{
   pointer-events:none;
 }
 .price{
-  font-size:clamp(100px,38vw,270px);
+  font-size:100px;
   font-weight:700;
   color:var(--text);
   letter-spacing:-2px;
@@ -45,6 +45,7 @@ body::before{
   text-align:center;
   padding:0 12px;
   width:100%;
+  white-space:nowrap;
 }
 .meta{
   margin-bottom:8px;
@@ -233,13 +234,33 @@ function startProgress() {
   progTimer = setInterval(updateProgress, 200);
 }
 
+/* ── Auto-fit price to fill container ── */
+function fitPrice() {
+  var el = document.getElementById('price');
+  if (!el || el.textContent === '—') return;
+  var vw = window.innerWidth || document.documentElement.clientWidth;
+  var vh = window.innerHeight || document.documentElement.clientHeight;
+  var maxW = vw - 24;
+  var maxH = vh * 0.75;
+  var lo = 40, hi = vw;
+  while (hi - lo > 1) {
+    var mid = Math.floor((lo + hi) / 2);
+    el.style.fontSize = mid + 'px';
+    if (el.scrollWidth <= maxW && el.offsetHeight <= maxH) { lo = mid; } else { hi = mid; }
+  }
+  el.style.fontSize = lo + 'px';
+}
+
 /* ── Seconds-since-update ticker — removed (no meta label) ── */
 
 var _origRender = render;
 render = function(data) {
   _origRender(data);
+  fitPrice();
   startProgress();
 };
+
+window.addEventListener('resize', fitPrice);
 
 fetchPrice();
 setInterval(fetchPrice, REFRESH);
