@@ -148,7 +148,7 @@ function fmtTime(d) {
 /* ── Price formatting ── */
 function fmt(p) {
   if (!p && p !== 0) return '—';
-  if (p >= 1)    return parseFloat(p.toFixed(6));
+  if (p >= 1)    return parseFloat(p.toFixed(2));
   if (p >= 0.01) return p.toFixed(4);
   return p.toFixed(6);
 }
